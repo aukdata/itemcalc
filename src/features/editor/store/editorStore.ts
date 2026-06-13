@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import type {
   CalculationResult,
   EditorEdge,
@@ -125,7 +125,10 @@ function nowIso(): string {
 
 function mutateProject(
   state: EditorStoreState,
-  updater: (project: ProjectDocumentV1) => void
+  updater: (project: ProjectDocumentV1) => void,
+  options?: {
+    preserveCalculation?: boolean;
+  }
 ): Partial<EditorStoreState> {
   const nextProject = cloneProject(state.project);
   const previous = snapshot(state.project);
@@ -133,7 +136,7 @@ function mutateProject(
   nextProject.updatedAt = nowIso();
 
   return {
-    calculation: null,
+    calculation: options?.preserveCalculation ? state.calculation : null,
     dirtyRevision: state.dirtyRevision + 1,
     project: nextProject,
     redoStack: [],
@@ -147,7 +150,7 @@ function createEmptyProject(): ProjectDocumentV1 {
   const project = cloneProject(sampleProject);
   const stamp = nowIso();
   project.id = crypto.randomUUID();
-  project.name = "新しいプロジェクト";
+  project.name = "\u65b0\u3057\u3044\u30d7\u30ed\u30b8\u30a7\u30af\u30c8";
   project.createdAt = stamp;
   project.updatedAt = stamp;
   project.line.id = crypto.randomUUID();
@@ -167,17 +170,17 @@ function makeNodePosition(nodeCount: number) {
 function defaultMaterialName(kind: EditorNodeKind): string {
   switch (kind) {
     case "externalInput":
-      return "入力素材";
+      return "\u5165\u529b\u7d20\u6750";
     case "targetOutput":
-      return "出力素材";
+      return "\u51fa\u529b\u7d20\u6750";
     case "disposal":
-      return "廃棄素材";
+      return "\u5ec3\u68c4\u7d20\u6750";
     case "process":
-      return "中間素材";
+      return "\u4e2d\u9593\u7d20\u6750";
   }
 }
 
-function createRecipeInput(materialName = "入力素材"): RecipeInput {
+function createRecipeInput(materialName = "\u5165\u529b\u7d20\u6750"): RecipeInput {
   return {
     id: `input-${crypto.randomUUID()}`,
     material: { kind: "item", name: materialName },
@@ -185,12 +188,11 @@ function createRecipeInput(materialName = "入力素材"): RecipeInput {
   };
 }
 
-function createRecipeOutput(materialName = "出力素材"): RecipeOutput {
+function createRecipeOutput(materialName = "\u51fa\u529b\u7d20\u6750"): RecipeOutput {
   return {
     id: `output-${crypto.randomUUID()}`,
     material: { kind: "item", name: materialName },
-    amountPerRun: 1,
-    probability: 1
+    amountPerRun: 1
   };
 }
 
@@ -556,7 +558,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
           const processId = `process-${id}`;
           project.line.processes.push({
             id: processId,
-            machineName: "新しいプロセス",
+            machineName: "\u65b0\u3057\u3044\u30d7\u30ed\u30bb\u30b9",
             inputs: [{ ...createRecipeInput(materialName), id: `input-${id}` }],
             outputs: [{ ...createRecipeOutput(materialName), id: `output-${id}` }],
             baseDurationTicks: 20,
@@ -577,7 +579,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
           const externalId = `external-${id}`;
           project.line.externalInputs.push({
             id: externalId,
-            label: "新しい外部入力",
+            label: "\u65b0\u3057\u3044\u5916\u90e8\u5165\u529b",
             material: { kind: "item", name: materialName }
           });
           project.editor.nodes.push({
@@ -593,7 +595,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
           const targetId = `target-${id}`;
           project.line.targets.push({
             id: targetId,
-            label: "新しい目標",
+            label: "\u65b0\u3057\u3044\u76ee\u6a19",
             material: { kind: "item", name: materialName },
             requiredFlowPerTick: 0.05
           });
@@ -609,7 +611,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
         const disposalId = `disposal-${id}`;
         project.line.disposals.push({
           id: disposalId,
-          label: "新しい廃棄先",
+          label: "\u65b0\u3057\u3044\u5ec3\u68c4\u5148",
           material: { kind: "item", name: materialName }
         });
         project.editor.nodes.push({
@@ -709,7 +711,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
             project.line.processes.push({
               ...structuredClone(clipboard.process),
               id: processId,
-              machineName: `${clipboard.process.machineName} コピー`,
+              machineName: `${clipboard.process.machineName} \u30b3\u30d4\u30fc`,
               inputs: clipboard.process.inputs.map((input) => ({
                 ...structuredClone(input),
                 id: `input-${crypto.randomUUID()}`
@@ -735,8 +737,8 @@ export const useEditorStore = create<EditorStore>()((set) => ({
               ...structuredClone(clipboard.externalInput),
               id: externalId,
               label: clipboard.externalInput.label
-                ? `${clipboard.externalInput.label} コピー`
-                : "外部入力 コピー"
+                ? `${clipboard.externalInput.label} \u30b3\u30d4\u30fc`
+                : "\u5916\u90e8\u5165\u529b \u30b3\u30d4\u30fc"
             });
             project.editor.nodes.push({
               ...structuredClone(clipboard.node),
@@ -754,8 +756,8 @@ export const useEditorStore = create<EditorStore>()((set) => ({
               ...structuredClone(clipboard.target),
               id: targetId,
               label: clipboard.target.label
-                ? `${clipboard.target.label} コピー`
-                : "目標 コピー"
+                ? `${clipboard.target.label} \u30b3\u30d4\u30fc`
+                : "\u76ee\u6a19 \u30b3\u30d4\u30fc"
             });
             project.editor.nodes.push({
               ...structuredClone(clipboard.node),
@@ -772,8 +774,8 @@ export const useEditorStore = create<EditorStore>()((set) => ({
             ...structuredClone(clipboard.disposal),
             id: disposalId,
             label: clipboard.disposal.label
-              ? `${clipboard.disposal.label} コピー`
-              : "廃棄先 コピー"
+              ? `${clipboard.disposal.label} \u30b3\u30d4\u30fc`
+              : "\u5ec3\u68c4\u5148 \u30b3\u30d4\u30fc"
           });
           project.editor.nodes.push({
             ...structuredClone(clipboard.node),
@@ -788,11 +790,15 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   },
   moveNode(nodeId, position) {
     set((state) =>
-      mutateProject(state, (project) => {
-        project.editor.nodes = project.editor.nodes.map((node) =>
-          node.id === nodeId ? { ...node, position } : node
-        );
-      })
+      mutateProject(
+        state,
+        (project) => {
+          project.editor.nodes = project.editor.nodes.map((node) =>
+            node.id === nodeId ? { ...node, position } : node
+          );
+        },
+        { preserveCalculation: true }
+      )
     );
   },
   redo() {
@@ -1027,9 +1033,13 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   },
   updateViewport(viewport) {
     set((state) =>
-      mutateProject(state, (project) => {
-        project.editor.viewport = viewport;
-      })
+      mutateProject(
+        state,
+        (project) => {
+          project.editor.viewport = viewport;
+        },
+        { preserveCalculation: true }
+      )
     );
   },
   updateEdge(edgeId, sourceNodeId, targetNodeId, sourceHandleId, targetHandleId) {

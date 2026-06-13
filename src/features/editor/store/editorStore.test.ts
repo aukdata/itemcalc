@@ -87,8 +87,7 @@ describe("useEditorStore", () => {
     });
     useEditorStore.getState().updateProcessOutput("process-reactor", addedOutput.id, {
       ...addedOutput,
-      amountPerRun: 2,
-      probability: 0.5
+      amountPerRun: 2.5
     });
 
     const updatedProcess = useEditorStore
@@ -99,8 +98,7 @@ describe("useEditorStore", () => {
       material: { kind: "fluid", name: "Steam" }
     });
     expect(updatedProcess?.outputs.at(-1)).toMatchObject({
-      amountPerRun: 2,
-      probability: 0.5
+      amountPerRun: 2.5
     });
 
     useEditorStore.getState().removeProcessInput("process-reactor", addedInput.id);

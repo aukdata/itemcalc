@@ -61,7 +61,6 @@ export interface RecipeOutput {
   id: Id;
   material: MaterialRef;
   amountPerRun: number;
-  probability?: number;
 }
 
 export interface ProcessNode {

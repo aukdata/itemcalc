@@ -9,27 +9,42 @@ export interface ProcessNodeCardData extends Record<string, unknown> {
   kind: "process" | "target" | "externalInput" | "disposal";
   title: string;
   meta: string;
+  metaLines?: string[];
+  recipeLines?: string[];
   inputPorts: NodePortData[];
   outputPorts: NodePortData[];
 }
 
 export type ProcessFlowNode = Node<ProcessNodeCardData, "process">;
 
-export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
-  const kindLabel =
-    data.kind === "process"
-      ? "プロセス"
-      : data.kind === "target"
-        ? "目標"
-        : data.kind === "externalInput"
-          ? "外部入力"
-          : "廃棄先";
+const kindLabels = {
+  process: "プロセス",
+  target: "目標",
+  externalInput: "外部入力",
+  disposal: "廃棄先"
+} as const;
 
+export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
   return (
     <div className="flow-node">
-      <p className="flow-node__type">{kindLabel}</p>
+      <p className="flow-node__type">{kindLabels[data.kind]}</p>
       <h3 className="flow-node__title">{data.title}</h3>
-      <p className="flow-node__meta">{data.meta}</p>
+      {data.meta === "" ? null : <p className="flow-node__meta">{data.meta}</p>}
+      {data.metaLines?.map((line) => (
+        <p className="flow-node__meta" key={line}>
+          {line}
+        </p>
+      ))}
+      {data.recipeLines === undefined || data.recipeLines.length === 0 ? null : (
+        <div className="flow-node__recipe">
+          <p className="flow-node__recipe-title">1台レシピ</p>
+          {data.recipeLines.map((line) => (
+            <p className="flow-node__recipe-line" key={line}>
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
       <div className="flow-node__ports">
         <div className="flow-node__port-column">
           {data.inputPorts.map((port, index) => (

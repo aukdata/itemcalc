@@ -37,15 +37,24 @@ describe("EditorScreen", () => {
     useEditorStore.getState().clearSelection();
   });
 
-  it("adds a process from the sidebar", async () => {
+  it("adds a process from the toolbar", async () => {
     const user = userEvent.setup();
     render(<EditorScreen />);
 
-    expect(screen.getAllByText("化学反応機")).toHaveLength(1);
+    expect(
+      useEditorStore.getState().project.line.processes.find((process) => process.id === "process-reactor")
+        ?.machineName
+    ).toBe("\u5316\u5b66\u53cd\u5fdc\u6a5f");
 
-    await user.click(screen.getByRole("button", { name: "プロセス追加" }));
+    await user.click(
+      screen.getByRole("button", { name: "\u30d7\u30ed\u30bb\u30b9\u8ffd\u52a0" })
+    );
 
-    expect(screen.getAllByText("新しいプロセス")).toHaveLength(1);
+    expect(
+      useEditorStore.getState().project.line.processes.some(
+        (process) => process.machineName === "\u65b0\u3057\u3044\u30d7\u30ed\u30bb\u30b9"
+      )
+    ).toBe(true);
   });
 
   it("edits the selected process name through the sidebar", async () => {
@@ -54,11 +63,38 @@ describe("EditorScreen", () => {
 
     await user.click(screen.getByRole("button", { name: "node-reactor" }));
 
-    const machineNameInput = screen.getByLabelText("設備名");
+    const machineNameInput = screen.getByDisplayValue("\u5316\u5b66\u53cd\u5fdc\u6a5f");
     await user.clear(machineNameInput);
-    await user.type(machineNameInput, "重合装置");
+    await user.type(machineNameInput, "\u91cd\u5408\u88c5\u7f6e");
 
-    expect(screen.getByDisplayValue("重合装置")).toBeInTheDocument();
-    expect(useEditorStore.getState().project.line.processes.find((process) => process.id === "process-reactor")?.machineName).toBe("重合装置");
+    expect(screen.getByDisplayValue("\u91cd\u5408\u88c5\u7f6e")).toBeInTheDocument();
+    expect(
+      useEditorStore.getState().project.line.processes.find((process) => process.id === "process-reactor")
+        ?.machineName
+    ).toBe("\u91cd\u5408\u88c5\u7f6e");
+  });
+
+  it("supports copy, paste, and delete keyboard shortcuts outside inputs", async () => {
+    const user = userEvent.setup();
+    render(<EditorScreen />);
+
+    await user.click(screen.getByRole("button", { name: "node-reactor" }));
+
+    await user.keyboard("{Control>}c{/Control}");
+    await user.keyboard("{Control>}v{/Control}");
+
+    expect(
+      useEditorStore.getState().project.line.processes.some(
+        (process) => process.machineName === "\u5316\u5b66\u53cd\u5fdc\u6a5f \u30b3\u30d4\u30fc"
+      )
+    ).toBe(true);
+
+    await user.keyboard("{Delete}");
+
+    expect(
+      useEditorStore.getState().project.line.processes.some(
+        (process) => process.machineName === "\u5316\u5b66\u53cd\u5fdc\u6a5f \u30b3\u30d4\u30fc"
+      )
+    ).toBe(false);
   });
 });

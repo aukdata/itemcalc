@@ -5,17 +5,17 @@ const now = "2026-06-13T00:00:00.000Z";
 export const sampleProject: ProjectDocumentV1 = {
   schemaVersion: 1,
   id: "project-sample",
-  name: "ポリエチレン デモ",
+  name: "\u30dd\u30ea\u30a8\u30c1\u30ec\u30f3 \u30c7\u30e2",
   createdAt: now,
   updatedAt: now,
   line: {
     schemaVersion: 1,
     id: "line-sample",
-    name: "ポリエチレン デモ",
+    name: "\u30dd\u30ea\u30a8\u30c1\u30ec\u30f3 \u30c7\u30e2",
     processes: [
       {
         id: "process-cracker",
-        machineName: "分解装置",
+        machineName: "\u5206\u89e3\u88c5\u7f6e",
         inputs: [
           {
             id: "input-naphtha",
@@ -37,7 +37,7 @@ export const sampleProject: ProjectDocumentV1 = {
       },
       {
         id: "process-reactor",
-        machineName: "化学反応機",
+        machineName: "\u5316\u5b66\u53cd\u5fdc\u6a5f",
         inputs: [
           {
             id: "input-ethylene",
@@ -66,12 +66,12 @@ export const sampleProject: ProjectDocumentV1 = {
     externalInputs: [
       {
         id: "external-naphtha",
-        label: "ナフサ外部入力",
+        label: "\u30ca\u30d5\u30b5\u5916\u90e8\u5165\u529b",
         material: { kind: "fluid", name: "Naphtha" }
       },
       {
         id: "external-oxygen",
-        label: "酸素外部入力",
+        label: "\u9178\u7d20\u5916\u90e8\u5165\u529b",
         material: { kind: "fluid", name: "Oxygen" }
       }
     ],
@@ -79,7 +79,7 @@ export const sampleProject: ProjectDocumentV1 = {
     targets: [
       {
         id: "target-polyethylene",
-        label: "ポリエチレン目標",
+        label: "\u30dd\u30ea\u30a8\u30c1\u30ec\u30f3\u76ee\u6a19",
         material: { kind: "item", name: "Polyethylene" },
         requiredFlowPerTick: 0.1
       }

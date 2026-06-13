@@ -96,7 +96,7 @@ function normalizeProcesses(line: ProductionLine): {
 
     const tierDelta = operatingTierIndex - minimumTierIndex;
     const actualDurationTicks = Math.max(1, process.baseDurationTicks / 2 ** tierDelta);
-    const actualPowerEUt = process.basePowerEUt * 4 ** tierDelta;
+    const actualPowerEUt = process.basePowerEUt * 2 ** tierDelta;
 
     const inputs = process.inputs.flatMap((input) => {
       const networkId = portToNetwork.get(`input:${process.id}:${input.id}`);
@@ -133,7 +133,7 @@ function normalizeProcesses(line: ProductionLine): {
         {
           id: output.id,
           networkId,
-          amountPerRun: output.amountPerRun * (output.probability ?? 1)
+          amountPerRun: output.amountPerRun
         }
       ];
     });
@@ -442,7 +442,7 @@ export async function calculateLine(
         const runRate = normalizedProcess
           ? solution.variableValues[processVar(normalizedProcess.id)] ?? 0
           : 0;
-        return sum + (output ? output.amountPerRun * (output.probability ?? 1) * runRate : 0);
+        return sum + (output ? output.amountPerRun * runRate : 0);
       }, 0),
       epsilon
     );

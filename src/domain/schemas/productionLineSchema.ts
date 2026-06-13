@@ -34,8 +34,7 @@ export const recipeInputSchema = z.object({
 export const recipeOutputSchema = z.object({
   id: z.string().trim().min(1),
   material: materialRefSchema,
-  amountPerRun: z.number().positive(),
-  probability: z.number().min(0).max(1).optional()
+  amountPerRun: z.number().positive()
 });
 
 export const processNodeSchema = z.object({

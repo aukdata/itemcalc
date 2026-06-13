@@ -43,15 +43,15 @@ textarea {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
-  padding: 16px;
-  gap: 12px;
+  padding: 12px;
+  gap: 10px;
 }
 
 .hero {
   margin: 0;
-  padding: 12px 18px;
+  padding: 8px 14px;
   border: 1px solid var(--panel-border);
-  border-radius: 18px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(255, 250, 243, 0.92), rgba(255, 244, 228, 0.7));
   box-shadow: var(--shadow);
   animation: rise-in 420ms ease-out;
@@ -60,22 +60,25 @@ textarea {
 .compact-hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+}
+
+.compact-hero--single {
+  justify-content: flex-start;
 }
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(1.6rem, 2.3vw, 2.2rem);
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.15rem, 1.6vw, 1.5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .eyebrow {
-  margin: 0 0 4px;
+  margin: 0;
   color: var(--accent);
   letter-spacing: 0.08em;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -93,14 +96,14 @@ textarea {
 .editor-layout {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   height: 100%;
 }
 
 .editor-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -129,15 +132,17 @@ textarea {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 14px;
 }
 
 .toolbar__project {
   display: grid;
-  gap: 6px;
+  grid-template-columns: auto minmax(140px, 1fr);
+  align-items: center;
+  gap: 6px 10px;
 }
 
 .toolbar__project-label,
@@ -151,22 +156,21 @@ textarea {
   margin-top: 0;
 }
 
+.toolbar__status {
+  grid-column: 1 / -1;
+}
+
 .toolbar__actions {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
   white-space: nowrap;
 }
 
 .toolbar__button {
   margin-top: 0;
   flex: 0 0 auto;
-}
-
-.toolbar__hint {
-  grid-column: 1 / -1;
-  margin: 0;
 }
 
 .sidebar-label {
@@ -188,10 +192,10 @@ textarea {
 }
 
 .action-button {
-  margin-top: 14px;
+  margin-top: 0;
   border: 0;
   border-radius: 999px;
-  padding: 10px 16px;
+  padding: 9px 14px;
   background: linear-gradient(135deg, #9f4f1a, #c9732c);
   color: #fff7f0;
   cursor: pointer;
@@ -212,10 +216,10 @@ textarea {
 
 .secondary-button,
 .file-button {
-  margin-top: 14px;
+  margin-top: 0;
   border: 1px solid rgba(71, 48, 26, 0.16);
   border-radius: 999px;
-  padding: 10px 16px;
+  padding: 9px 14px;
   background: rgba(255, 249, 240, 0.84);
   color: #4a3726;
   cursor: pointer;
@@ -381,6 +385,25 @@ textarea {
   font-size: 0.9rem;
 }
 
+.flow-node__recipe {
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(171, 132, 88, 0.18);
+}
+
+.flow-node__recipe-title {
+  margin: 0 0 0.22rem;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.flow-node__recipe-line {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
 .flow-node__ports {
   display: flex;
   justify-content: space-between;
@@ -424,6 +447,30 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.85);
 }
 
+.flow-edge__label {
+  position: absolute;
+  padding: 4px 8px;
+  border: 1px solid rgba(71, 48, 26, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 252, 247, 0.92);
+  box-shadow: 0 6px 16px rgba(38, 22, 9, 0.12);
+  color: #4a3726;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.flow-edge__title {
+  display: block;
+  font-size: 0.76rem;
+}
+
+.flow-edge__detail {
+  color: var(--text-soft);
+}
+
 @keyframes rise-in {
   from {
     opacity: 0;
@@ -438,7 +485,7 @@ textarea {
 
 @media (max-width: 960px) {
   .app-shell {
-    padding: 12px;
+    padding: 10px;
   }
 
   .compact-hero,
@@ -449,6 +496,7 @@ textarea {
 
   .compact-hero {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .editor-grid {
