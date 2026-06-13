@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type {
   CalculationResult,
   Diagnostic,
@@ -11,20 +11,10 @@ import type {
 import { TIER_ORDER } from "../../domain/production-line/types";
 
 interface EditorSidebarProps {
-  canDeleteSelection: boolean;
   calculation: CalculationResult | null;
   diagnostics: Diagnostic[];
-  isCalculating: boolean;
   onAddProcessInput: (processId: string) => void;
   onAddProcessOutput: (processId: string) => void;
-  onCalculate: () => void;
-  onCreateNode: (kind: "process" | "externalInput" | "targetOutput" | "disposal") => void;
-  onDeleteSelected: () => void;
-  onExport: () => void;
-  onImport: (file: File) => void;
-  onNewProject: () => void;
-  onProjectNameChange: (name: string) => void;
-  onRedo: () => void;
   onRemoveProcessInput: (processId: string, inputId: string) => void;
   onRemoveProcessOutput: (processId: string, outputId: string) => void;
   onSelectedCircuitNumberChange: (circuitNumber: number | undefined) => void;
@@ -50,10 +40,8 @@ interface EditorSidebarProps {
   ) => void;
   onTargetFlowChange: (targetId: string, requiredFlowPerTick: number) => void;
   onTierChange: (processId: string, tier: VoltageTier) => void;
-  onUndo: () => void;
   project: ProjectDocumentV1;
   saveErrorMessage: string | null;
-  saveState: string;
   selectedEdgeId: string | null;
   selectedNodeId: string | null;
 }
@@ -80,20 +68,10 @@ function parseOptionalNumber(value: string): number | undefined {
 }
 
 export function EditorSidebar({
-  canDeleteSelection,
   calculation,
   diagnostics,
-  isCalculating,
   onAddProcessInput,
   onAddProcessOutput,
-  onCalculate,
-  onCreateNode,
-  onDeleteSelected,
-  onExport,
-  onImport,
-  onNewProject,
-  onProjectNameChange,
-  onRedo,
   onRemoveProcessInput,
   onRemoveProcessOutput,
   onSelectedCircuitNumberChange,
@@ -110,14 +88,11 @@ export function EditorSidebar({
   onSelectedEdgeChange,
   onTargetFlowChange,
   onTierChange,
-  onUndo,
   project,
   saveErrorMessage,
-  saveState,
   selectedEdgeId,
   selectedNodeId
 }: EditorSidebarProps) {
-  const fileInputId = useId();
   const selectedNode =
     selectedNodeId === null
       ? null
@@ -312,137 +287,48 @@ export function EditorSidebar({
     edgeDraftState.edgeId === derivedEdgeDraft.edgeId ? edgeDraftState : derivedEdgeDraft;
   const sourcePortOptions = listPorts(edgeDraft.sourceNodeId, "source");
   const targetPortOptions = listPorts(edgeDraft.targetNodeId, "target");
+  const selectedNodeKindLabel =
+    selectedNode?.kind === "process"
+      ? "プロセス"
+      : selectedNode?.kind === "externalInput"
+        ? "外部入力"
+        : selectedNode?.kind === "targetOutput"
+          ? "目標"
+          : selectedNode?.kind === "disposal"
+            ? "廃棄先"
+            : "";
 
   return (
     <>
-      <section className="sidebar-section">
-        <h2>{project.name}</h2>
-        <p>Save state: {saveState}</p>
-        {saveErrorMessage === null ? null : (
-          <p className="error-banner" data-testid="save-error-message">
-            {saveErrorMessage}
-          </p>
-        )}
-        <div className="button-row">
-          <button
-            className="action-button"
-            data-testid="calculate-button"
-            onClick={onCalculate}
-            type="button"
-            disabled={isCalculating}
-          >
-            {isCalculating ? "Calculating..." : "Calculate"}
-          </button>
-          <button className="secondary-button" onClick={onNewProject} type="button">
-            New
-          </button>
-        </div>
-        <div className="button-row">
-          <button className="secondary-button" onClick={onUndo} type="button">
-            Undo
-          </button>
-          <button className="secondary-button" onClick={onRedo} type="button">
-            Redo
-          </button>
-        </div>
-        <div className="button-row">
-          <button className="secondary-button" onClick={onExport} type="button">
-            Export
-          </button>
-          <label className="file-button" htmlFor={fileInputId}>
-            Import
-          </label>
-          <input
-            accept="application/json"
-            className="visually-hidden"
-            data-testid="import-input"
-            id={fileInputId}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file !== undefined) {
-                onImport(file);
-                event.target.value = "";
-              }
-            }}
-            type="file"
-          />
-        </div>
-        <div className="button-row">
-          <button
-            className="secondary-button"
-            data-testid="add-process-button"
-            onClick={() => {
-              onCreateNode("process");
-            }}
-            type="button"
-          >
-            Add Process
-          </button>
-          <button
-            className="secondary-button"
-            onClick={() => {
-              onCreateNode("externalInput");
-            }}
-            type="button"
-          >
-            Add Input
-          </button>
-        </div>
-        <div className="button-row">
-          <button
-            className="secondary-button"
-            onClick={() => {
-              onCreateNode("targetOutput");
-            }}
-            type="button"
-          >
-            Add Target
-          </button>
-          <button
-            className="secondary-button"
-            onClick={() => {
-              onCreateNode("disposal");
-            }}
-            type="button"
-          >
-            Add Disposal
-          </button>
-        </div>
-        <div className="button-row">
-          <button
-            className="secondary-button"
-            disabled={!canDeleteSelection}
-            onClick={onDeleteSelected}
-            type="button"
-          >
-            Delete Selected
-          </button>
-        </div>
-      </section>
+      {saveErrorMessage === null ? null : (
+        <p className="error-banner" data-testid="save-error-message">
+          {saveErrorMessage}
+        </p>
+      )}
 
       <section className="sidebar-section">
-        <span className="sidebar-label">Selection</span>
+        <span className="sidebar-label">選択中の項目</span>
         {selectedNode === null ? (
           selectedEdgeId === null ? (
-            <p className="sidebar-metric">No node selected.</p>
+            <p className="sidebar-metric">ノードまたは接続を選択してください。</p>
           ) : (
             selectedEdge === null ? (
-              <p className="sidebar-metric">Edge selected: {selectedEdgeId}</p>
+              <p className="sidebar-metric">接続を選択中: {selectedEdgeId}</p>
             ) : (
               <>
-                <p className="sidebar-metric">edge</p>
+                <p className="sidebar-metric">接続</p>
                 <p className="sidebar-metric">
                   {describeNode(selectedEdge.source.nodeId)} {"->"} {describeNode(selectedEdge.target.nodeId)}
                 </p>
-                <p className="sidebar-metric">Material: {selectedEdge.material.name}</p>
+                <p className="sidebar-metric">素材: {selectedEdge.material.name}</p>
                 <p className="sidebar-metric">
-                  Source port: {describeEndpointPort("source", selectedEdge.source)}
+                  出力ポート: {describeEndpointPort("source", selectedEdge.source)}
                 </p>
                 <p className="sidebar-metric">
-                  Target port: {describeEndpointPort("target", selectedEdge.target)}
+                  入力ポート: {describeEndpointPort("target", selectedEdge.target)}
                 </p>
                 <label className="field-label">
-                  Source node
+                  出力ノード
                   <select
                     className="field-input"
                     onChange={(event) => {
@@ -465,7 +351,7 @@ export function EditorSidebar({
                   </select>
                 </label>
                 <label className="field-label">
-                  Source port
+                  出力ポート
                   <select
                     className="field-input"
                     onChange={(event) => {
@@ -485,7 +371,7 @@ export function EditorSidebar({
                   </select>
                 </label>
                 <label className="field-label">
-                  Target node
+                  入力ノード
                   <select
                     className="field-input"
                     onChange={(event) => {
@@ -508,7 +394,7 @@ export function EditorSidebar({
                   </select>
                 </label>
                 <label className="field-label">
-                  Target port
+                  入力ポート
                   <select
                     className="field-input"
                     onChange={(event) => {
@@ -541,7 +427,7 @@ export function EditorSidebar({
                     }}
                     type="button"
                   >
-                    Apply Edge
+                    接続を更新
                   </button>
                 </div>
               </>
@@ -549,11 +435,11 @@ export function EditorSidebar({
           )
         ) : (
           <>
-            <p className="sidebar-metric">{selectedNode.kind}</p>
+            <p className="sidebar-metric">{selectedNodeKindLabel}</p>
             {selectedProcess !== null ? (
               <>
                 <label className="field-label">
-                  Machine name
+                  設備名
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -564,7 +450,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  Base duration (t)
+                  基本処理時間 (t)
                   <input
                     className="field-input"
                     min="1"
@@ -610,7 +496,7 @@ export function EditorSidebar({
                   </select>
                 </label>
                 <label className="field-label">
-                  Circuit number
+                  回路番号
                   <input
                     className="field-input"
                     min="0"
@@ -624,7 +510,7 @@ export function EditorSidebar({
                 </label>
                 <div className="recipe-section">
                   <div className="recipe-section__header">
-                    <strong>Inputs</strong>
+                    <strong>入力</strong>
                     <button
                       className="secondary-button compact-button"
                       onClick={() => {
@@ -632,13 +518,13 @@ export function EditorSidebar({
                       }}
                       type="button"
                     >
-                      Add Input
+                      入力追加
                     </button>
                   </div>
                   {selectedProcess.inputs.map((input) => (
                     <div className="recipe-row" key={input.id}>
                       <label className="field-label">
-                        Material
+                        素材
                         <input
                           className="field-input"
                           onChange={(event) => {
@@ -652,7 +538,7 @@ export function EditorSidebar({
                         />
                       </label>
                       <label className="field-label">
-                        Kind
+                        種別
                         <select
                           className="field-input"
                           onChange={(event) => {
@@ -666,12 +552,12 @@ export function EditorSidebar({
                           }}
                           value={input.material.kind}
                         >
-                          <option value="item">item</option>
-                          <option value="fluid">fluid</option>
+                          <option value="item">アイテム</option>
+                          <option value="fluid">流体</option>
                         </select>
                       </label>
                       <label className="field-label">
-                        Amount / run
+                        1レシピ量
                         <input
                           className="field-input"
                           min="0"
@@ -694,14 +580,14 @@ export function EditorSidebar({
                         }}
                         type="button"
                       >
-                        Remove
+                        削除
                       </button>
                     </div>
                   ))}
                 </div>
                 <div className="recipe-section">
                   <div className="recipe-section__header">
-                    <strong>Outputs</strong>
+                    <strong>出力</strong>
                     <button
                       className="secondary-button compact-button"
                       onClick={() => {
@@ -709,13 +595,13 @@ export function EditorSidebar({
                       }}
                       type="button"
                     >
-                      Add Output
+                      出力追加
                     </button>
                   </div>
                   {selectedProcess.outputs.map((output) => (
                     <div className="recipe-row" key={output.id}>
                       <label className="field-label">
-                        Material
+                        素材
                         <input
                           className="field-input"
                           onChange={(event) => {
@@ -729,7 +615,7 @@ export function EditorSidebar({
                         />
                       </label>
                       <label className="field-label">
-                        Kind
+                        種別
                         <select
                           className="field-input"
                           onChange={(event) => {
@@ -743,12 +629,12 @@ export function EditorSidebar({
                           }}
                           value={output.material.kind}
                         >
-                          <option value="item">item</option>
-                          <option value="fluid">fluid</option>
+                          <option value="item">アイテム</option>
+                          <option value="fluid">流体</option>
                         </select>
                       </label>
                       <label className="field-label">
-                        Amount / run
+                        1レシピ量
                         <input
                           className="field-input"
                           min="0"
@@ -764,7 +650,7 @@ export function EditorSidebar({
                         />
                       </label>
                       <label className="field-label">
-                        Probability
+                        確率
                         <input
                           className="field-input"
                           max="1"
@@ -788,7 +674,7 @@ export function EditorSidebar({
                         }}
                         type="button"
                       >
-                        Remove
+                        削除
                       </button>
                     </div>
                   ))}
@@ -798,7 +684,7 @@ export function EditorSidebar({
             {selectedExternal !== null ? (
               <>
                 <label className="field-label">
-                  Label
+                  ラベル
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -809,7 +695,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  Material
+                  素材
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -820,7 +706,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  Max flow / tick
+                  最大流量 / tick
                   <input
                     className="field-input"
                     min="0"
@@ -830,14 +716,14 @@ export function EditorSidebar({
                         selectedExternal.costPerUnit
                       );
                     }}
-                    placeholder="Unlimited"
+                    placeholder="無制限"
                     step="0.01"
                     type="number"
                     value={selectedExternal.maximumFlowPerTick ?? ""}
                   />
                 </label>
                 <label className="field-label">
-                  Cost / unit
+                  コスト / unit
                   <input
                     className="field-input"
                     min="0"
@@ -847,7 +733,7 @@ export function EditorSidebar({
                         parseOptionalNumber(event.target.value)
                       );
                     }}
-                    placeholder="Optional"
+                    placeholder="任意"
                     step="0.01"
                     type="number"
                     value={selectedExternal.costPerUnit ?? ""}
@@ -858,7 +744,7 @@ export function EditorSidebar({
             {selectedTarget !== null ? (
               <>
                 <label className="field-label">
-                  Label
+                  ラベル
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -869,7 +755,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  Material
+                  素材
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -880,7 +766,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  Flow / second
+                  秒間流量
                   <input
                     className="field-input"
                     min="0.01"
@@ -900,7 +786,7 @@ export function EditorSidebar({
             {selectedDisposal !== null ? (
               <>
                 <label className="field-label">
-                  Label
+                  ラベル
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -911,7 +797,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  Material
+                  素材
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -928,23 +814,7 @@ export function EditorSidebar({
       </section>
 
       <section className="sidebar-section">
-        <span className="sidebar-label">Project</span>
-        <label className="field-label">
-          Name
-          <input
-            className="field-input"
-            data-testid="project-name-input"
-            onChange={(event) => {
-              onProjectNameChange(event.target.value);
-            }}
-            type="text"
-            value={project.name}
-          />
-        </label>
-      </section>
-
-      <section className="sidebar-section">
-        <span className="sidebar-label">Targets</span>
+        <span className="sidebar-label">目標一覧</span>
         {project.line.targets.map((target) => (
           <label className="field-label" key={target.id}>
             {target.label ?? target.material.name}
@@ -969,7 +839,7 @@ export function EditorSidebar({
       </section>
 
       <section className="sidebar-section">
-        <span className="sidebar-label">Processes</span>
+        <span className="sidebar-label">プロセス一覧</span>
         {project.line.processes.map((process) => (
           <div className="process-card" key={process.id}>
             <strong>{process.machineName}</strong>
@@ -977,7 +847,7 @@ export function EditorSidebar({
               {process.baseDurationTicks}t / {process.basePowerEUt} EU/t
             </p>
             <label className="field-label">
-              Operating tier
+              動作Tier
               <select
                 className="field-input"
                 onChange={(event) => {
@@ -997,9 +867,9 @@ export function EditorSidebar({
       </section>
 
       <section className="sidebar-section">
-        <span className="sidebar-label">Compile diagnostics</span>
+        <span className="sidebar-label">コンパイル診断</span>
         {diagnostics.length === 0 ? (
-          <p className="sidebar-metric">No graph diagnostics.</p>
+          <p className="sidebar-metric">グラフ診断はありません。</p>
         ) : (
           <ul className="diagnostic-list">
             {diagnostics.map((entry) => (
@@ -1011,13 +881,13 @@ export function EditorSidebar({
 
       {calculation !== null ? (
         <section className="sidebar-section">
-          <span className="sidebar-label">Latest result</span>
+          <span className="sidebar-label">計算結果</span>
           <p className="sidebar-metric">
             {calculation.status} | Avg {calculation.power.averageEUt.toFixed(2)} EU/t | Max{" "}
             {calculation.power.maximumEUt.toFixed(2)} EU/t
           </p>
           <div className="result-section" data-testid="result-summary">
-            <strong>Processes</strong>
+            <strong>プロセス</strong>
             <div className="result-card-grid">
               {calculation.processes.map((process) => (
                 <div className="process-card" key={process.processId}>
@@ -1036,7 +906,7 @@ export function EditorSidebar({
             </div>
           </div>
           <div className="result-network-list">
-            <strong>Networks</strong>
+            <strong>ネットワーク</strong>
             {calculation.networks.map((network) => (
               <div className="process-card" data-testid="result-network-card" key={network.networkId}>
                 <strong>{network.networkId}</strong>
@@ -1064,9 +934,9 @@ export function EditorSidebar({
             ))}
           </div>
           <div className="result-section">
-            <strong>Calculation diagnostics</strong>
+            <strong>計算診断</strong>
             {calculation.diagnostics.length === 0 ? (
-              <p className="sidebar-metric">No calculation diagnostics.</p>
+              <p className="sidebar-metric">計算診断はありません。</p>
             ) : (
               <ul className="diagnostic-list" data-testid="calculation-diagnostics">
                 {calculation.diagnostics.map((entry) => (

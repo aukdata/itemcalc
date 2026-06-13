@@ -3,13 +3,12 @@ import { EditorScreen } from "../../features/editor/EditorScreen";
 export function AppShell() {
   return (
     <div className="app-shell">
-      <header className="hero">
-        <p className="eyebrow">GregTech Flow Planner</p>
-        <h1>ItemCalc</h1>
-        <p className="lede">
-          Steady-state line design with compiled material networks, LP solving, and worker-backed
-          throughput analysis.
-        </p>
+      <header className="hero compact-hero">
+        <div>
+          <p className="eyebrow">GregTech フロープランナー</p>
+          <h1>ItemCalc</h1>
+        </div>
+        <p className="lede">生産ラインの計算、編集、保存を1画面で扱えます。</p>
       </header>
       <main className="workspace">
         <EditorScreen />

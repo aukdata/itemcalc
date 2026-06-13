@@ -16,10 +16,33 @@ interface EditorSnapshot {
   project: ProjectDocumentV1;
 }
 
+type ClipboardEntry =
+  | {
+      kind: "process";
+      node: ProjectDocumentV1["editor"]["nodes"][number];
+      process: ProjectDocumentV1["line"]["processes"][number];
+    }
+  | {
+      kind: "externalInput";
+      node: ProjectDocumentV1["editor"]["nodes"][number];
+      externalInput: ProjectDocumentV1["line"]["externalInputs"][number];
+    }
+  | {
+      kind: "targetOutput";
+      node: ProjectDocumentV1["editor"]["nodes"][number];
+      target: ProjectDocumentV1["line"]["targets"][number];
+    }
+  | {
+      kind: "disposal";
+      node: ProjectDocumentV1["editor"]["nodes"][number];
+      disposal: ProjectDocumentV1["line"]["disposals"][number];
+    };
+
 export type SaveState = "saved" | "unsaved" | "saving" | "saveError";
 
 interface EditorStoreState {
   calculation: CalculationResult | null;
+  clipboard: ClipboardEntry | null;
   dirtyRevision: number;
   project: ProjectDocumentV1;
   redoStack: EditorSnapshot[];
@@ -34,6 +57,7 @@ interface EditorStoreActions {
   addProcessInput: (processId: string) => void;
   addProcessOutput: (processId: string) => void;
   clearSelection: () => void;
+  copySelection: () => void;
   createEdge: (
     sourceNodeId: string | null,
     targetNodeId: string | null,
@@ -48,6 +72,7 @@ interface EditorStoreActions {
   markSaving: () => void;
   moveNode: (nodeId: string, position: { x: number; y: number }) => void;
   newProject: () => void;
+  pasteClipboard: () => void;
   redo: () => void;
   replaceProject: (project: ProjectDocumentV1) => void;
   selectNode: (nodeId: string | null) => void;
@@ -122,7 +147,7 @@ function createEmptyProject(): ProjectDocumentV1 {
   const project = cloneProject(sampleProject);
   const stamp = nowIso();
   project.id = crypto.randomUUID();
-  project.name = "Untitled Project";
+  project.name = "新しいプロジェクト";
   project.createdAt = stamp;
   project.updatedAt = stamp;
   project.line.id = crypto.randomUUID();
@@ -142,17 +167,17 @@ function makeNodePosition(nodeCount: number) {
 function defaultMaterialName(kind: EditorNodeKind): string {
   switch (kind) {
     case "externalInput":
-      return "Input Material";
+      return "入力素材";
     case "targetOutput":
-      return "Output Material";
+      return "出力素材";
     case "disposal":
-      return "Waste Material";
+      return "廃棄素材";
     case "process":
-      return "Intermediate";
+      return "中間素材";
   }
 }
 
-function createRecipeInput(materialName = "Input Material"): RecipeInput {
+function createRecipeInput(materialName = "入力素材"): RecipeInput {
   return {
     id: `input-${crypto.randomUUID()}`,
     material: { kind: "item", name: materialName },
@@ -160,7 +185,7 @@ function createRecipeInput(materialName = "Input Material"): RecipeInput {
   };
 }
 
-function createRecipeOutput(materialName = "Output Material"): RecipeOutput {
+function createRecipeOutput(materialName = "出力素材"): RecipeOutput {
   return {
     id: `output-${crypto.randomUUID()}`,
     material: { kind: "item", name: materialName },
@@ -382,8 +407,16 @@ function isProcessOutputEndpoint(endpoint: EditorEdge["source"]): endpoint is Ex
   return endpoint.endpointType === "processOutput";
 }
 
+function offsetNodePosition(position: { x: number; y: number }) {
+  return {
+    x: position.x + 48,
+    y: position.y + 48
+  };
+}
+
 export const useEditorStore = create<EditorStore>()((set) => ({
   calculation: null,
+  clipboard: null,
   dirtyRevision: 0,
   project: cloneProject(sampleProject),
   redoStack: [],
@@ -423,6 +456,79 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   clearSelection() {
     set({ selection: { edgeIds: [], nodeIds: [] } });
   },
+  copySelection() {
+    set((state) => {
+      const selectedNodeId = state.selection.nodeIds[0];
+      if (selectedNodeId === undefined) {
+        return state;
+      }
+
+      const node = state.project.editor.nodes.find((candidate) => candidate.id === selectedNodeId);
+      if (node === undefined) {
+        return state;
+      }
+
+      if (node.kind === "process") {
+        const process = state.project.line.processes.find((candidate) => candidate.id === node.entityId);
+        if (process === undefined) {
+          return state;
+        }
+
+        return {
+          clipboard: {
+            kind: "process",
+            node: structuredClone(node),
+            process: structuredClone(process)
+          }
+        };
+      }
+
+      if (node.kind === "externalInput") {
+        const externalInput = state.project.line.externalInputs.find(
+          (candidate) => candidate.id === node.entityId
+        );
+        if (externalInput === undefined) {
+          return state;
+        }
+
+        return {
+          clipboard: {
+            kind: "externalInput",
+            node: structuredClone(node),
+            externalInput: structuredClone(externalInput)
+          }
+        };
+      }
+
+      if (node.kind === "targetOutput") {
+        const target = state.project.line.targets.find((candidate) => candidate.id === node.entityId);
+        if (target === undefined) {
+          return state;
+        }
+
+        return {
+          clipboard: {
+            kind: "targetOutput",
+            node: structuredClone(node),
+            target: structuredClone(target)
+          }
+        };
+      }
+
+      const disposal = state.project.line.disposals.find((candidate) => candidate.id === node.entityId);
+      if (disposal === undefined) {
+        return state;
+      }
+
+      return {
+        clipboard: {
+          kind: "disposal",
+          node: structuredClone(node),
+          disposal: structuredClone(disposal)
+        }
+      };
+    });
+  },
   createEdge(sourceNodeId, targetNodeId, sourceHandleId, targetHandleId) {
     set((state) => {
       if (sourceNodeId === null || targetNodeId === null) {
@@ -450,7 +556,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
           const processId = `process-${id}`;
           project.line.processes.push({
             id: processId,
-            machineName: "New Process",
+            machineName: "新しいプロセス",
             inputs: [{ ...createRecipeInput(materialName), id: `input-${id}` }],
             outputs: [{ ...createRecipeOutput(materialName), id: `output-${id}` }],
             baseDurationTicks: 20,
@@ -471,7 +577,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
           const externalId = `external-${id}`;
           project.line.externalInputs.push({
             id: externalId,
-            label: "New External Input",
+            label: "新しい外部入力",
             material: { kind: "item", name: materialName }
           });
           project.editor.nodes.push({
@@ -487,7 +593,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
           const targetId = `target-${id}`;
           project.line.targets.push({
             id: targetId,
-            label: "New Target",
+            label: "新しい目標",
             material: { kind: "item", name: materialName },
             requiredFlowPerTick: 0.05
           });
@@ -503,7 +609,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
         const disposalId = `disposal-${id}`;
         project.line.disposals.push({
           id: disposalId,
-          label: "New Disposal",
+          label: "新しい廃棄先",
           material: { kind: "item", name: materialName }
         });
         project.editor.nodes.push({
@@ -573,6 +679,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   newProject() {
     set({
       calculation: null,
+      clipboard: null,
       dirtyRevision: 1,
       project: createEmptyProject(),
       redoStack: [],
@@ -581,6 +688,102 @@ export const useEditorStore = create<EditorStore>()((set) => ({
       savedRevision: -1,
       selection: { edgeIds: [], nodeIds: [] },
       undoStack: []
+    });
+  },
+  pasteClipboard() {
+    set((state) => {
+      if (state.clipboard === null) {
+        return state;
+      }
+      const clipboard = state.clipboard;
+
+      let pastedNodeId = "";
+
+      return {
+        ...mutateProject(state, (project) => {
+          const position = offsetNodePosition(clipboard.node.position);
+
+          if (clipboard.kind === "process") {
+            const processId = `process-${crypto.randomUUID()}`;
+            pastedNodeId = `node-${crypto.randomUUID()}`;
+            project.line.processes.push({
+              ...structuredClone(clipboard.process),
+              id: processId,
+              machineName: `${clipboard.process.machineName} コピー`,
+              inputs: clipboard.process.inputs.map((input) => ({
+                ...structuredClone(input),
+                id: `input-${crypto.randomUUID()}`
+              })),
+              outputs: clipboard.process.outputs.map((output) => ({
+                ...structuredClone(output),
+                id: `output-${crypto.randomUUID()}`
+              }))
+            });
+            project.editor.nodes.push({
+              ...structuredClone(clipboard.node),
+              id: pastedNodeId,
+              entityId: processId,
+              position
+            });
+            return;
+          }
+
+          if (clipboard.kind === "externalInput") {
+            const externalId = `external-${crypto.randomUUID()}`;
+            pastedNodeId = `node-${crypto.randomUUID()}`;
+            project.line.externalInputs.push({
+              ...structuredClone(clipboard.externalInput),
+              id: externalId,
+              label: clipboard.externalInput.label
+                ? `${clipboard.externalInput.label} コピー`
+                : "外部入力 コピー"
+            });
+            project.editor.nodes.push({
+              ...structuredClone(clipboard.node),
+              id: pastedNodeId,
+              entityId: externalId,
+              position
+            });
+            return;
+          }
+
+          if (clipboard.kind === "targetOutput") {
+            const targetId = `target-${crypto.randomUUID()}`;
+            pastedNodeId = `node-${crypto.randomUUID()}`;
+            project.line.targets.push({
+              ...structuredClone(clipboard.target),
+              id: targetId,
+              label: clipboard.target.label
+                ? `${clipboard.target.label} コピー`
+                : "目標 コピー"
+            });
+            project.editor.nodes.push({
+              ...structuredClone(clipboard.node),
+              id: pastedNodeId,
+              entityId: targetId,
+              position
+            });
+            return;
+          }
+
+          const disposalId = `disposal-${crypto.randomUUID()}`;
+          pastedNodeId = `node-${crypto.randomUUID()}`;
+          project.line.disposals.push({
+            ...structuredClone(clipboard.disposal),
+            id: disposalId,
+            label: clipboard.disposal.label
+              ? `${clipboard.disposal.label} コピー`
+              : "廃棄先 コピー"
+          });
+          project.editor.nodes.push({
+            ...structuredClone(clipboard.node),
+            id: pastedNodeId,
+            entityId: disposalId,
+            position
+          });
+        }),
+        selection: { edgeIds: [], nodeIds: pastedNodeId === "" ? [] : [pastedNodeId] }
+      };
     });
   },
   moveNode(nodeId, position) {
@@ -615,6 +818,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   replaceProject(project) {
     set({
       calculation: null,
+      clipboard: null,
       dirtyRevision: 0,
       project: cloneProject(project),
       redoStack: [],

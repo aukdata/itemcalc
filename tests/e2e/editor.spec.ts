@@ -23,16 +23,16 @@ test.describe("editor", () => {
   });
 
   test("calculates sample line and persists project name edits", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Polyethylene Demo" })).toBeVisible();
+    await expect(page.getByTestId("project-name-input")).toHaveValue("ポリエチレン デモ");
 
     const projectNameInput = page.getByTestId("project-name-input");
-    await projectNameInput.fill("E2E Project");
-    await expect(projectNameInput).toHaveValue("E2E Project");
+    await projectNameInput.fill("E2Eプロジェクト");
+    await expect(projectNameInput).toHaveValue("E2Eプロジェクト");
 
     await page.waitForTimeout(900);
     await page.reload();
 
-    await expect(page.locator('[data-testid="project-name-input"]')).toHaveValue("E2E Project");
+    await expect(page.locator('[data-testid="project-name-input"]')).toHaveValue("E2Eプロジェクト");
 
     await page.getByTestId("calculate-button").click();
     await expect(page.getByTestId("result-summary")).toBeVisible();
@@ -41,11 +41,11 @@ test.describe("editor", () => {
       .toBeGreaterThan(0);
 
     await page.getByTestId("add-process-button").click();
-    await expect(page.getByRole("heading", { name: "New Process" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "新しいプロセス" })).toBeVisible();
   });
 
   test("shows an error for invalid project imports", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Polyethylene Demo" })).toBeVisible();
+    await expect(page.getByTestId("project-name-input")).toHaveValue("ポリエチレン デモ");
 
     await page.getByTestId("import-input").setInputFiles({
       name: "broken-project.json",

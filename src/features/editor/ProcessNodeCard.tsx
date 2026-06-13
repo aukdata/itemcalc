@@ -16,9 +16,18 @@ export interface ProcessNodeCardData extends Record<string, unknown> {
 export type ProcessFlowNode = Node<ProcessNodeCardData, "process">;
 
 export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
+  const kindLabel =
+    data.kind === "process"
+      ? "プロセス"
+      : data.kind === "target"
+        ? "目標"
+        : data.kind === "externalInput"
+          ? "外部入力"
+          : "廃棄先";
+
   return (
     <div className="flow-node">
-      <p className="flow-node__type">{data.kind}</p>
+      <p className="flow-node__type">{kindLabel}</p>
       <h3 className="flow-node__title">{data.title}</h3>
       <p className="flow-node__meta">{data.meta}</p>
       <div className="flow-node__ports">

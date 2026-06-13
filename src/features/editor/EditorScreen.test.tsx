@@ -41,11 +41,11 @@ describe("EditorScreen", () => {
     const user = userEvent.setup();
     render(<EditorScreen />);
 
-    expect(screen.getAllByText("Chemical Reactor")).toHaveLength(1);
+    expect(screen.getAllByText("化学反応機")).toHaveLength(1);
 
-    await user.click(screen.getByRole("button", { name: "Add Process" }));
+    await user.click(screen.getByRole("button", { name: "プロセス追加" }));
 
-    expect(screen.getAllByText("New Process")).toHaveLength(1);
+    expect(screen.getAllByText("新しいプロセス")).toHaveLength(1);
   });
 
   it("edits the selected process name through the sidebar", async () => {
@@ -54,11 +54,11 @@ describe("EditorScreen", () => {
 
     await user.click(screen.getByRole("button", { name: "node-reactor" }));
 
-    const machineNameInput = screen.getByLabelText("Machine name");
+    const machineNameInput = screen.getByLabelText("設備名");
     await user.clear(machineNameInput);
-    await user.type(machineNameInput, "Polymerizer");
+    await user.type(machineNameInput, "重合装置");
 
-    expect(screen.getByDisplayValue("Polymerizer")).toBeInTheDocument();
-    expect(useEditorStore.getState().project.line.processes.find((process) => process.id === "process-reactor")?.machineName).toBe("Polymerizer");
+    expect(screen.getByDisplayValue("重合装置")).toBeInTheDocument();
+    expect(useEditorStore.getState().project.line.processes.find((process) => process.id === "process-reactor")?.machineName).toBe("重合装置");
   });
 });

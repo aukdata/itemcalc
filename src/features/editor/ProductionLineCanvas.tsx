@@ -233,8 +233,8 @@ export function ProductionLineCanvas({ project }: { project: ProjectDocumentV1 }
   return (
     <>
       <div className="canvas-heading">
-        <h2>Line editor</h2>
-        <p>Compiled calculation networks are sourced from these authored edges.</p>
+        <h2>ライン編集</h2>
+        <p>この接続図から計算用ネットワークを組み立てます。</p>
       </div>
       <ReactFlow
         nodes={nodes}

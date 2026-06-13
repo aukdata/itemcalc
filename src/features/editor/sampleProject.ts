@@ -5,17 +5,17 @@ const now = "2026-06-13T00:00:00.000Z";
 export const sampleProject: ProjectDocumentV1 = {
   schemaVersion: 1,
   id: "project-sample",
-  name: "Polyethylene Demo",
+  name: "ポリエチレン デモ",
   createdAt: now,
   updatedAt: now,
   line: {
     schemaVersion: 1,
     id: "line-sample",
-    name: "Polyethylene Demo",
+    name: "ポリエチレン デモ",
     processes: [
       {
         id: "process-cracker",
-        machineName: "Cracking Unit",
+        machineName: "分解装置",
         inputs: [
           {
             id: "input-naphtha",
@@ -37,7 +37,7 @@ export const sampleProject: ProjectDocumentV1 = {
       },
       {
         id: "process-reactor",
-        machineName: "Chemical Reactor",
+        machineName: "化学反応機",
         inputs: [
           {
             id: "input-ethylene",
@@ -66,12 +66,12 @@ export const sampleProject: ProjectDocumentV1 = {
     externalInputs: [
       {
         id: "external-naphtha",
-        label: "Import Naphtha",
+        label: "ナフサ外部入力",
         material: { kind: "fluid", name: "Naphtha" }
       },
       {
         id: "external-oxygen",
-        label: "Import Oxygen",
+        label: "酸素外部入力",
         material: { kind: "fluid", name: "Oxygen" }
       }
     ],
@@ -79,7 +79,7 @@ export const sampleProject: ProjectDocumentV1 = {
     targets: [
       {
         id: "target-polyethylene",
-        label: "Polyethylene Goal",
+        label: "ポリエチレン目標",
         material: { kind: "item", name: "Polyethylene" },
         requiredFlowPerTick: 0.1
       }

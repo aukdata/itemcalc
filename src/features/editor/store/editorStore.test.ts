@@ -258,4 +258,21 @@ describe("useEditorStore", () => {
       material: { kind: "fluid", name: "Oxygen" }
     });
   });
+
+  it("copies and pastes the selected node with shifted position", () => {
+    useEditorStore.getState().selectNode("node-reactor");
+    useEditorStore.getState().copySelection();
+    useEditorStore.getState().pasteClipboard();
+
+    const pastedNode = useEditorStore.getState().project.editor.nodes.at(-1);
+    const pastedProcess = useEditorStore.getState().project.line.processes.at(-1);
+
+    expect(pastedNode).toBeDefined();
+    expect(pastedProcess).toBeDefined();
+    expect(pastedNode?.id).not.toBe("node-reactor");
+    expect(pastedProcess?.id).not.toBe("process-reactor");
+    expect(pastedNode?.position).toEqual({ x: 688, y: 238 });
+    expect(pastedProcess?.machineName).toBe("化学反応機 コピー");
+    expect(useEditorStore.getState().selection.nodeIds).toEqual([pastedNode?.id ?? ""]);
+  });
 });
