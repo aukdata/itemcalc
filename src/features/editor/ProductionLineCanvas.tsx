@@ -19,7 +19,9 @@ import { TIER_INDEX } from "../../domain/production-line/types";
 import type {
   CalculationResult,
   EditorEdge,
-  ProjectDocumentV1
+  ProcessNode,
+  ProjectDocumentV1,
+  VoltageTier
 } from "../../domain/production-line/types";
 import { ProcessNodeCard, type ProcessNodeCardData } from "./ProcessNodeCard";
 import { useEditorStore } from "./store/editorStore";
@@ -29,32 +31,105 @@ const nodeTypes = {
 };
 
 function formatAmount(kind: "item" | "fluid", amount: number) {
-  const unit = kind === "fluid" ? "mB" : "個";
+  const unit = kind === "fluid" ? "mB" : "\u500b";
   return `${amount.toFixed(2)} ${unit}`;
 }
 
 function formatRate(kind: "item" | "fluid", flowPerTick: number) {
   const perSecond = flowPerTick * 20;
-  const unit = kind === "fluid" ? "mB/s" : "個/s";
+  const unit = kind === "fluid" ? "mB/s" : "\u500b/s";
   return `${perSecond.toFixed(2)} ${unit}`;
 }
 
-function calculateActualDurationTicks(baseDurationTicks: number, minimumTier: string, operatingTier: string) {
-  const minimumIndex = TIER_INDEX[minimumTier as keyof typeof TIER_INDEX];
-  const operatingIndex = TIER_INDEX[operatingTier as keyof typeof TIER_INDEX];
+function calculateActualDurationTicks(
+  baseDurationTicks: number,
+  minimumTier: VoltageTier,
+  operatingTier: VoltageTier
+) {
+  const minimumIndex = TIER_INDEX[minimumTier];
+  const operatingIndex = TIER_INDEX[operatingTier];
   const tierDelta = Math.max(operatingIndex - minimumIndex, 0);
   return Math.max(baseDurationTicks / 2 ** tierDelta, 1);
 }
 
-function calculateActualPowerEUt(basePowerEUt: number, minimumTier: string, operatingTier: string) {
-  const minimumIndex = TIER_INDEX[minimumTier as keyof typeof TIER_INDEX];
-  const operatingIndex = TIER_INDEX[operatingTier as keyof typeof TIER_INDEX];
+function calculateActualPowerEUt(
+  basePowerEUt: number,
+  minimumTier: VoltageTier,
+  operatingTier: VoltageTier
+) {
+  const minimumIndex = TIER_INDEX[minimumTier];
+  const operatingIndex = TIER_INDEX[operatingTier];
   const tierDelta = Math.max(operatingIndex - minimumIndex, 0);
   return basePowerEUt * 2 ** tierDelta;
 }
 
 function findProcessCalculation(calculation: CalculationResult | null, processId: string) {
   return calculation?.processes.find((candidate) => candidate.processId === processId);
+}
+
+function buildProcessNodeData(process: ProcessNode, calculation: CalculationResult | null) {
+  const processCalculation = findProcessCalculation(calculation, process.id);
+
+  return {
+    kind: "process" as const,
+    title: process.machineName,
+    meta: "",
+    metaLines: [
+      processCalculation === undefined
+        ? "\u5fc5\u8981\u53f0\u6570 \u672a\u8a08\u7b97"
+        : `\u5fc5\u8981\u53f0\u6570 ${processCalculation.placedMachineCount}\u53f0`,
+      `\u6700\u4f4eTier ${process.minimumTier}`,
+      `\u7a3c\u50cdTier ${process.operatingTier}`,
+      `*\u6d88\u8cbbEU/t ${(
+        processCalculation?.actualPowerEUt ??
+        calculateActualPowerEUt(process.basePowerEUt, process.minimumTier, process.operatingTier)
+      ).toFixed(2)}`,
+      `*\u52a0\u5de5\u6642\u9593 ${(
+        processCalculation?.actualDurationTicks ??
+        calculateActualDurationTicks(
+          process.baseDurationTicks,
+          process.minimumTier,
+          process.operatingTier
+        )
+      ).toFixed(2)} t`
+    ],
+    recipeLines: [
+      ...process.inputs.map(
+        (input) =>
+          `\u5165\u529b ${input.material.name} (${formatAmount(
+            input.material.kind,
+            input.amountPerRun
+          )})`
+      ),
+      ...process.outputs.map(
+        (output) =>
+          `\u51fa\u529b ${output.material.name} (${formatAmount(
+            output.material.kind,
+            output.amountPerRun
+          )})`
+      )
+    ],
+    inputPorts: process.inputs.map((input) => ({
+      id: `process-input:${input.id}`,
+      label:
+        processCalculation === undefined
+          ? ""
+          : `${input.material.name} ${formatRate(
+              input.material.kind,
+              processCalculation.runRatePerTick * input.amountPerRun
+            )}`
+    })),
+    outputPorts: process.outputs.map((output) => ({
+      id: `process-output:${output.id}`,
+      label:
+        processCalculation === undefined
+          ? ""
+          : `${output.material.name} ${formatRate(
+              output.material.kind,
+              processCalculation.runRatePerTick * output.amountPerRun
+            )}`
+    }))
+  } satisfies ProcessNodeCardData;
 }
 
 function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResult | null) {
@@ -65,70 +140,11 @@ function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResul
         throw new Error(`Process not found: ${node.entityId}`);
       }
 
-      const processCalculation = findProcessCalculation(calculation, process.id);
-
       return {
         id: node.id,
         type: "process",
         position: node.position,
-        data: {
-          kind: "process" as const,
-          title: process.machineName,
-          meta: "",
-          metaLines: [
-            processCalculation === undefined
-              ? "必要台数 未計算"
-              : `必要台数 ${processCalculation.placedMachineCount}台`,
-            `最低Tier ${process.minimumTier}`,
-            `稼働Tier ${process.operatingTier}`,
-            `*消費EU/t ${(
-              processCalculation?.actualPowerEUt ??
-              calculateActualPowerEUt(
-                process.basePowerEUt,
-                process.minimumTier,
-                process.operatingTier
-              )
-            ).toFixed(2)}`,
-            `*加工時間 ${(
-              processCalculation?.actualDurationTicks ??
-              calculateActualDurationTicks(
-                process.baseDurationTicks,
-                process.minimumTier,
-                process.operatingTier
-              )
-            ).toFixed(2)} t`
-          ],
-          recipeLines: [
-            ...process.inputs.map(
-              (input) =>
-                `入力 ${input.material.name} (${formatAmount(input.material.kind, input.amountPerRun)})`
-            ),
-            ...process.outputs.map(
-              (output) =>
-                `出力 ${output.material.name} (${formatAmount(output.material.kind, output.amountPerRun)})`
-            )
-          ],
-          inputPorts: process.inputs.map((input) => ({
-            id: `process-input:${input.id}`,
-            label:
-              processCalculation === undefined
-                ? ""
-                : `${input.material.name} ${formatRate(
-                    input.material.kind,
-                    processCalculation.runRatePerTick * input.amountPerRun
-                  )}`
-          })),
-          outputPorts: process.outputs.map((output) => ({
-            id: `process-output:${output.id}`,
-            label:
-              processCalculation === undefined
-                ? ""
-                : `${output.material.name} ${formatRate(
-                    output.material.kind,
-                    processCalculation.runRatePerTick * output.amountPerRun
-                  )}`
-          }))
-        } satisfies ProcessNodeCardData
+        data: buildProcessNodeData(process, calculation)
       };
     }
 
@@ -147,7 +163,8 @@ function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResul
                   edge.source.endpointType === "externalInput" && edge.source.nodeId === node.id
               )
               .reduce((sum, edge) => {
-                if (edge.target.endpointType !== "processInput") {
+                const target = edge.target;
+                if (target.endpointType !== "processInput") {
                   return sum;
                 }
 
@@ -160,8 +177,7 @@ function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResul
                 const processCalculation = process
                   ? findProcessCalculation(calculation, process.id)
                   : undefined;
-                const portId = edge.target.portId;
-                const input = process?.inputs.find((candidate) => candidate.id === portId);
+                const input = process?.inputs.find((candidate) => candidate.id === target.portId);
 
                 if (processCalculation === undefined || input === undefined) {
                   return sum;
@@ -176,7 +192,7 @@ function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResul
         position: node.position,
         data: {
           kind: "externalInput" as const,
-          title: external.label ?? "外部入力",
+          title: external.label ?? "\u5916\u90e8\u5165\u529b",
           meta: external.material.name,
           inputPorts: [],
           outputPorts: [
@@ -207,11 +223,14 @@ function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResul
         position: node.position,
         data: {
           kind: "target" as const,
-          title: target.label ?? "目標",
+          title: target.label ?? "\u76ee\u6a19",
           meta:
             calculation === null
               ? ""
-              : `必要流量 ${formatRate(target.material.kind, target.requiredFlowPerTick)}`,
+              : `\u5fc5\u8981\u6d41\u91cf ${formatRate(
+                  target.material.kind,
+                  target.requiredFlowPerTick
+                )}`,
           inputPorts: [
             {
               id: "target-input",
@@ -240,35 +259,34 @@ function buildNodeData(project: ProjectDocumentV1, calculation: CalculationResul
       position: node.position,
       data: {
         kind: "disposal" as const,
-        title: disposal.label ?? "廃棄先",
+        title: disposal.label ?? "\u5ec3\u68c4\u5148",
         meta: disposal.material.name,
-        inputPorts: [
-          {
-            id: "disposal-input",
-            label: ""
-          }
-        ],
+        inputPorts: [{ id: "disposal-input", label: "" }],
         outputPorts: []
       } satisfies ProcessNodeCardData
     };
   });
 }
 
-function getEdgeLabel(edge: EditorEdge, project: ProjectDocumentV1, calculation: CalculationResult | null) {
+function getEdgeLabel(
+  edge: EditorEdge,
+  project: ProjectDocumentV1,
+  calculation: CalculationResult | null
+) {
   if (calculation === null) {
     return edge.material.name;
   }
 
-  if (edge.source.endpointType === "processOutput") {
+  const source = edge.source;
+  if (source.endpointType === "processOutput") {
     const processNode = project.editor.nodes.find(
-      (candidate) => candidate.id === edge.source.nodeId && candidate.kind === "process"
+      (candidate) => candidate.id === source.nodeId && candidate.kind === "process"
     );
     const process = processNode
       ? project.line.processes.find((candidate) => candidate.id === processNode.entityId)
       : undefined;
     const processCalculation = process ? findProcessCalculation(calculation, process.id) : undefined;
-    const portId = edge.source.portId;
-    const output = process?.outputs.find((candidate) => candidate.id === portId);
+    const output = process?.outputs.find((candidate) => candidate.id === source.portId);
 
     if (processCalculation !== undefined && output !== undefined) {
       return `${edge.material.name}\n${formatRate(
@@ -278,31 +296,22 @@ function getEdgeLabel(edge: EditorEdge, project: ProjectDocumentV1, calculation:
     }
   }
 
-  if (edge.source.endpointType === "externalInput") {
-    const externalNode = project.editor.nodes.find(
-      (candidate) => candidate.id === edge.source.nodeId && candidate.kind === "externalInput"
+  const target = edge.target;
+  if (source.endpointType === "externalInput" && target.endpointType === "processInput") {
+    const processNode = project.editor.nodes.find(
+      (candidate) => candidate.id === target.nodeId && candidate.kind === "process"
     );
-    const external = externalNode
-      ? project.line.externalInputs.find((candidate) => candidate.id === externalNode.entityId)
+    const process = processNode
+      ? project.line.processes.find((candidate) => candidate.id === processNode.entityId)
       : undefined;
+    const processCalculation = process ? findProcessCalculation(calculation, process.id) : undefined;
+    const input = process?.inputs.find((candidate) => candidate.id === target.portId);
 
-    if (external !== undefined && edge.target.endpointType === "processInput") {
-      const processNode = project.editor.nodes.find(
-        (candidate) => candidate.id === edge.target.nodeId && candidate.kind === "process"
-      );
-      const process = processNode
-        ? project.line.processes.find((candidate) => candidate.id === processNode.entityId)
-        : undefined;
-      const processCalculation = process ? findProcessCalculation(calculation, process.id) : undefined;
-      const portId = edge.target.portId;
-      const input = process?.inputs.find((candidate) => candidate.id === portId);
-
-      if (processCalculation !== undefined && input !== undefined) {
-        return `${edge.material.name}\n${formatRate(
-          edge.material.kind,
-          processCalculation.runRatePerTick * input.amountPerRun
-        )}`;
-      }
+    if (processCalculation !== undefined && input !== undefined) {
+      return `${edge.material.name}\n${formatRate(
+        edge.material.kind,
+        processCalculation.runRatePerTick * input.amountPerRun
+      )}`;
     }
   }
 

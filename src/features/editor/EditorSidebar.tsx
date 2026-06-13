@@ -78,30 +78,38 @@ function parseOptionalNumber(value: string): number | undefined {
   return Number.isFinite(next) ? next : undefined;
 }
 
-function calculateActualDurationTicks(baseDurationTicks: number, minimumTier: VoltageTier, operatingTier: VoltageTier) {
+function calculateActualDurationTicks(
+  baseDurationTicks: number,
+  minimumTier: VoltageTier,
+  operatingTier: VoltageTier
+) {
   const tierDelta = Math.max(TIER_INDEX[operatingTier] - TIER_INDEX[minimumTier], 0);
   return Math.max(baseDurationTicks / 2 ** tierDelta, 1);
 }
 
-function calculateActualPowerEUt(basePowerEUt: number, minimumTier: VoltageTier, operatingTier: VoltageTier) {
+function calculateActualPowerEUt(
+  basePowerEUt: number,
+  minimumTier: VoltageTier,
+  operatingTier: VoltageTier
+) {
   const tierDelta = Math.max(TIER_INDEX[operatingTier] - TIER_INDEX[minimumTier], 0);
   return basePowerEUt * 2 ** tierDelta;
 }
 
 function unitLabel(kind: RecipeInput["material"]["kind"]) {
-  return kind === "fluid" ? "mB" : "個";
+  return kind === "fluid" ? "mB" : "\u500b";
 }
 
 function formatNodeKind(kind: string) {
   switch (kind) {
     case "process":
-      return "プロセス";
+      return "\u30d7\u30ed\u30bb\u30b9";
     case "externalInput":
-      return "外部入力";
+      return "\u5916\u90e8\u5165\u529b";
     case "targetOutput":
-      return "目標";
+      return "\u76ee\u6a19";
     case "disposal":
-      return "廃棄先";
+      return "\u5ec3\u68c4\u5148";
     default:
       return kind;
   }
@@ -114,18 +122,30 @@ function getNodeTitle(project: ProjectDocumentV1, nodeId: string) {
   }
 
   if (node.kind === "process") {
-    return project.line.processes.find((candidate) => candidate.id === node.entityId)?.machineName ?? nodeId;
+    return (
+      project.line.processes.find((candidate) => candidate.id === node.entityId)?.machineName ??
+      nodeId
+    );
   }
 
   if (node.kind === "externalInput") {
-    return project.line.externalInputs.find((candidate) => candidate.id === node.entityId)?.label ?? "外部入力";
+    return (
+      project.line.externalInputs.find((candidate) => candidate.id === node.entityId)?.label ??
+      "\u5916\u90e8\u5165\u529b"
+    );
   }
 
   if (node.kind === "targetOutput") {
-    return project.line.targets.find((candidate) => candidate.id === node.entityId)?.label ?? "目標";
+    return (
+      project.line.targets.find((candidate) => candidate.id === node.entityId)?.label ??
+      "\u76ee\u6a19"
+    );
   }
 
-  return project.line.disposals.find((candidate) => candidate.id === node.entityId)?.label ?? "廃棄先";
+  return (
+    project.line.disposals.find((candidate) => candidate.id === node.entityId)?.label ??
+    "\u5ec3\u68c4\u5148"
+  );
 }
 
 function getSourceHandleOptions(project: ProjectDocumentV1, nodeId: string) {
@@ -135,14 +155,14 @@ function getSourceHandleOptions(project: ProjectDocumentV1, nodeId: string) {
   }
 
   if (node.kind === "externalInput") {
-    return [{ label: "外部出力", value: "external-output" }];
+    return [{ label: "\u5916\u90e8\u51fa\u529b", value: "external-output" }];
   }
 
   if (node.kind === "process") {
     const process = project.line.processes.find((candidate) => candidate.id === node.entityId);
     return (
       process?.outputs.map((output) => ({
-        label: `${output.material.name} 出力`,
+        label: `${output.material.name} \u51fa\u529b`,
         value: `process-output:${output.id}`
       })) ?? []
     );
@@ -161,18 +181,18 @@ function getTargetHandleOptions(project: ProjectDocumentV1, nodeId: string) {
     const process = project.line.processes.find((candidate) => candidate.id === node.entityId);
     return (
       process?.inputs.map((input) => ({
-        label: `${input.material.name} 入力`,
+        label: `${input.material.name} \u5165\u529b`,
         value: `process-input:${input.id}`
       })) ?? []
     );
   }
 
   if (node.kind === "targetOutput") {
-    return [{ label: "目標入力", value: "target-input" }];
+    return [{ label: "\u76ee\u6a19\u5165\u529b", value: "target-input" }];
   }
 
   if (node.kind === "disposal") {
-    return [{ label: "廃棄入力", value: "disposal-input" }];
+    return [{ label: "\u5ec3\u68c4\u5165\u529b", value: "disposal-input" }];
   }
 
   return [];
@@ -207,13 +227,13 @@ function EdgeEditor({
 
   return (
     <section className="sidebar-section">
-      <h2>選択中の接続</h2>
+      <h2>{"\u9078\u629e\u4e2d\u306e\u63a5\u7d9a"}</h2>
       <label className="field-label">
-        素材
+        {"\u7d20\u6750"}
         <input className="field-input" readOnly value={edge.material.name} />
       </label>
       <label className="field-label">
-        接続元ノード
+        {"\u63a5\u7d9a\u5143\u30ce\u30fc\u30c9"}
         <select
           className="field-input"
           onChange={(event) => {
@@ -231,7 +251,7 @@ function EdgeEditor({
         </select>
       </label>
       <label className="field-label">
-        接続元ポート
+        {"\u63a5\u7d9a\u5143\u30dd\u30fc\u30c8"}
         <select
           className="field-input"
           onChange={(event) => {
@@ -253,7 +273,7 @@ function EdgeEditor({
         </select>
       </label>
       <label className="field-label">
-        接続先ノード
+        {"\u63a5\u7d9a\u5148\u30ce\u30fc\u30c9"}
         <select
           className="field-input"
           onChange={(event) => {
@@ -271,7 +291,7 @@ function EdgeEditor({
         </select>
       </label>
       <label className="field-label">
-        接続先ポート
+        {"\u63a5\u7d9a\u5148\u30dd\u30fc\u30c8"}
         <select
           className="field-input"
           onChange={(event) => {
@@ -331,12 +351,18 @@ export function EditorSidebar({
     [project.editor.edges, selectedEdgeId]
   );
 
-  const saveError = saveErrorMessage === null ? null : <p className="error-banner">{saveErrorMessage}</p>;
+  const saveError =
+    saveErrorMessage === null ? null : <p className="error-banner">{saveErrorMessage}</p>;
 
   if (selectedNode !== null && selectedNode.kind === "process") {
-    const process = project.line.processes.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
+    const process =
+      project.line.processes.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
     if (process !== null) {
-      const actualPowerEUt = calculateActualPowerEUt(process.basePowerEUt, process.minimumTier, process.operatingTier);
+      const actualPowerEUt = calculateActualPowerEUt(
+        process.basePowerEUt,
+        process.minimumTier,
+        process.operatingTier
+      );
       const actualDurationTicks = calculateActualDurationTicks(
         process.baseDurationTicks,
         process.minimumTier,
@@ -349,10 +375,10 @@ export function EditorSidebar({
         <>
           {saveError}
           <section className="sidebar-section">
-            <h2>選択中の項目</h2>
+            <h2>{"\u9078\u629e\u4e2d\u306e\u9805\u76ee"}</h2>
             <p className="sidebar-metric">{formatNodeKind(selectedNode.kind)}</p>
             <label className="field-label">
-              設備名
+              {"\u8a2d\u5099\u540d"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -362,7 +388,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              最低Tier
+              {"\u6700\u4f4eTier"}
               <select
                 className="field-input"
                 onChange={(event) => {
@@ -378,7 +404,7 @@ export function EditorSidebar({
               </select>
             </label>
             <label className="field-label">
-              基準消費EU/t
+              {"\u57fa\u6e96\u6d88\u8cbbEU/t"}
               <input
                 className="field-input"
                 min="0"
@@ -391,7 +417,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              基準加工時間 (t)
+              {"\u57fa\u6e96\u52a0\u5de5\u6642\u9593 (t)"}
               <input
                 className="field-input"
                 min="1"
@@ -404,7 +430,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              稼働Tier
+              {"\u7a3c\u50cdTier"}
               <select
                 className="field-input"
                 onChange={(event) => {
@@ -420,18 +446,18 @@ export function EditorSidebar({
               </select>
             </label>
             <label className="field-label">
-              *消費EU/t
+              {"*\u6d88\u8cbbEU/t"}
               <input className="field-input" readOnly value={actualPowerEUt.toFixed(2)} />
             </label>
             <label className="field-label">
-              *加工時間 (t)
+              {"*\u52a0\u5de5\u6642\u9593 (t)"}
               <input className="field-input" readOnly value={actualDurationTicks.toFixed(2)} />
             </label>
             <span className="field-hint sidebar-metric">
-              * は最低Tierと稼働Tierから計算される値です。
+              {"* \u306f\u6700\u4f4eTier\u3068\u7a3c\u50cdTier\u304b\u3089\u8a08\u7b97\u3055\u308c\u308b\u5024\u3067\u3059\u3002"}
             </span>
             <label className="field-label">
-              回路番号
+              {"\u56de\u8def\u756a\u53f7"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -443,12 +469,14 @@ export function EditorSidebar({
               />
             </label>
             {processCalculation === null ? null : (
-              <p className="sidebar-metric">必要台数: {processCalculation.placedMachineCount}台</p>
+              <p className="sidebar-metric">
+                {`\u5fc5\u8981\u53f0\u6570: ${processCalculation.placedMachineCount}\u53f0`}
+              </p>
             )}
           </section>
           <section className="sidebar-section recipe-section">
             <div className="recipe-section__header">
-              <h2>入力</h2>
+              <h2>{"\u5165\u529b"}</h2>
               <button
                 className="secondary-button compact-button"
                 onClick={() => {
@@ -456,13 +484,13 @@ export function EditorSidebar({
                 }}
                 type="button"
               >
-                入力追加
+                {"\u5165\u529b\u8ffd\u52a0"}
               </button>
             </div>
             {process.inputs.map((input) => (
               <div className="recipe-row" key={input.id}>
                 <label className="field-label">
-                  素材
+                  {"\u7d20\u6750"}
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -475,7 +503,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  種別
+                  {"\u7a2e\u5225"}
                   <select
                     className="field-input"
                     onChange={(event) => {
@@ -489,12 +517,12 @@ export function EditorSidebar({
                     }}
                     value={input.material.kind}
                   >
-                    <option value="item">個体</option>
-                    <option value="fluid">流体</option>
+                    <option value="item">{"\u500b\u4f53"}</option>
+                    <option value="fluid">{"\u6d41\u4f53"}</option>
                   </select>
                 </label>
                 <label className="field-label">
-                  1レシピ量 ({unitLabel(input.material.kind)})
+                  {`1\u30ec\u30b7\u30d4\u91cf (${unitLabel(input.material.kind)})`}
                   <input
                     className="field-input"
                     min="0"
@@ -518,7 +546,7 @@ export function EditorSidebar({
                     }}
                     type="button"
                   >
-                    入力削除
+                    {"\u5165\u529b\u524a\u9664"}
                   </button>
                 </div>
               </div>
@@ -526,7 +554,7 @@ export function EditorSidebar({
           </section>
           <section className="sidebar-section recipe-section">
             <div className="recipe-section__header">
-              <h2>出力</h2>
+              <h2>{"\u51fa\u529b"}</h2>
               <button
                 className="secondary-button compact-button"
                 onClick={() => {
@@ -534,13 +562,13 @@ export function EditorSidebar({
                 }}
                 type="button"
               >
-                出力追加
+                {"\u51fa\u529b\u8ffd\u52a0"}
               </button>
             </div>
             {process.outputs.map((output) => (
               <div className="recipe-row" key={output.id}>
                 <label className="field-label">
-                  素材
+                  {"\u7d20\u6750"}
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -553,7 +581,7 @@ export function EditorSidebar({
                   />
                 </label>
                 <label className="field-label">
-                  種別
+                  {"\u7a2e\u5225"}
                   <select
                     className="field-input"
                     onChange={(event) => {
@@ -567,12 +595,12 @@ export function EditorSidebar({
                     }}
                     value={output.material.kind}
                   >
-                    <option value="item">個体</option>
-                    <option value="fluid">流体</option>
+                    <option value="item">{"\u500b\u4f53"}</option>
+                    <option value="fluid">{"\u6d41\u4f53"}</option>
                   </select>
                 </label>
                 <label className="field-label">
-                  1レシピ量 ({unitLabel(output.material.kind)})
+                  {`1\u30ec\u30b7\u30d4\u91cf (${unitLabel(output.material.kind)})`}
                   <input
                     className="field-input"
                     min="0"
@@ -596,7 +624,7 @@ export function EditorSidebar({
                     }}
                     type="button"
                   >
-                    出力削除
+                    {"\u51fa\u529b\u524a\u9664"}
                   </button>
                 </div>
               </div>
@@ -608,16 +636,17 @@ export function EditorSidebar({
   }
 
   if (selectedNode !== null && selectedNode.kind === "externalInput") {
-    const external = project.line.externalInputs.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
+    const external =
+      project.line.externalInputs.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
     if (external !== null) {
       return (
         <>
           {saveError}
           <section className="sidebar-section">
-            <h2>選択中の項目</h2>
+            <h2>{"\u9078\u629e\u4e2d\u306e\u9805\u76ee"}</h2>
             <p className="sidebar-metric">{formatNodeKind(selectedNode.kind)}</p>
             <label className="field-label">
-              ラベル
+              {"\u30e9\u30d9\u30eb"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -627,7 +656,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              素材名
+              {"\u7d20\u6750\u540d"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -637,19 +666,22 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              種別
+              {"\u7a2e\u5225"}
               <input
                 className="field-input"
                 readOnly
-                value={external.material.kind === "fluid" ? "流体" : "個体"}
+                value={external.material.kind === "fluid" ? "\u6d41\u4f53" : "\u500b\u4f53"}
               />
             </label>
             <label className="field-label">
-              最大流量 (毎tick)
+              {"\u6700\u5927\u6d41\u91cf (\u6bcetick)"}
               <input
                 className="field-input"
                 onChange={(event) => {
-                  onSelectedExternalLimitsChange(parseOptionalNumber(event.target.value), external.costPerUnit);
+                  onSelectedExternalLimitsChange(
+                    parseOptionalNumber(event.target.value),
+                    external.costPerUnit
+                  );
                 }}
                 step="0.01"
                 type="number"
@@ -657,7 +689,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              コスト / 単位
+              {"\u30b3\u30b9\u30c8 / \u5358\u4f4d"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -678,16 +710,17 @@ export function EditorSidebar({
   }
 
   if (selectedNode !== null && selectedNode.kind === "targetOutput") {
-    const target = project.line.targets.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
+    const target =
+      project.line.targets.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
     if (target !== null) {
       return (
         <>
           {saveError}
           <section className="sidebar-section">
-            <h2>選択中の項目</h2>
+            <h2>{"\u9078\u629e\u4e2d\u306e\u9805\u76ee"}</h2>
             <p className="sidebar-metric">{formatNodeKind(selectedNode.kind)}</p>
             <label className="field-label">
-              ラベル
+              {"\u30e9\u30d9\u30eb"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -697,7 +730,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              素材名
+              {"\u7d20\u6750\u540d"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -707,7 +740,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              必要流量 (毎tick)
+              {"\u5fc5\u8981\u6d41\u91cf (\u6bcetick)"}
               <input
                 className="field-input"
                 min="0"
@@ -726,16 +759,17 @@ export function EditorSidebar({
   }
 
   if (selectedNode !== null && selectedNode.kind === "disposal") {
-    const disposal = project.line.disposals.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
+    const disposal =
+      project.line.disposals.find((candidate) => candidate.id === selectedNode.entityId) ?? null;
     if (disposal !== null) {
       return (
         <>
           {saveError}
           <section className="sidebar-section">
-            <h2>選択中の項目</h2>
+            <h2>{"\u9078\u629e\u4e2d\u306e\u9805\u76ee"}</h2>
             <p className="sidebar-metric">{formatNodeKind(selectedNode.kind)}</p>
             <label className="field-label">
-              ラベル
+              {"\u30e9\u30d9\u30eb"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -745,7 +779,7 @@ export function EditorSidebar({
               />
             </label>
             <label className="field-label">
-              素材名
+              {"\u7d20\u6750\u540d"}
               <input
                 className="field-input"
                 onChange={(event) => {
@@ -773,14 +807,18 @@ export function EditorSidebar({
     <>
       {saveError}
       <section className="sidebar-section">
-        <h2>選択中の項目</h2>
+        <h2>{"\u9078\u629e\u4e2d\u306e\u9805\u76ee"}</h2>
         <p className="sidebar-metric">
-          ノードまたは接続を選択すると、ここに編集項目を表示します。
+          {"\u30ce\u30fc\u30c9\u307e\u305f\u306f\u63a5\u7d9a\u3092\u9078\u629e\u3059\u308b\u3068\u3001\u3053\u3053\u306b\u7de8\u96c6\u9805\u76ee\u3092\u8868\u793a\u3057\u307e\u3059\u3002"}
         </p>
         {calculation?.diagnostics.length ? (
-          <p className="sidebar-metric">計算診断: {calculation.diagnostics.length} 件</p>
+          <p className="sidebar-metric">
+            {`\u8a08\u7b97\u8a3a\u65ad: ${calculation.diagnostics.length} \u4ef6`}
+          </p>
         ) : diagnostics.length ? (
-          <p className="sidebar-metric">設計診断: {diagnostics.length} 件</p>
+          <p className="sidebar-metric">
+            {`\u8a2d\u8a08\u8a3a\u65ad: ${diagnostics.length} \u4ef6`}
+          </p>
         ) : null}
       </section>
     </>

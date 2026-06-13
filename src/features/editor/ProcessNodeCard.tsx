@@ -18,10 +18,10 @@ export interface ProcessNodeCardData extends Record<string, unknown> {
 export type ProcessFlowNode = Node<ProcessNodeCardData, "process">;
 
 const kindLabels = {
-  process: "プロセス",
-  target: "目標",
-  externalInput: "外部入力",
-  disposal: "廃棄先"
+  process: "\u30d7\u30ed\u30bb\u30b9",
+  target: "\u76ee\u6a19",
+  externalInput: "\u5916\u90e8\u5165\u529b",
+  disposal: "\u5ec3\u68c4\u5148"
 } as const;
 
 export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
@@ -37,7 +37,7 @@ export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
       ))}
       {data.recipeLines === undefined || data.recipeLines.length === 0 ? null : (
         <div className="flow-node__recipe">
-          <p className="flow-node__recipe-title">1台レシピ</p>
+          <p className="flow-node__recipe-title">{"1\u53f0\u30ec\u30b7\u30d4"}</p>
           {data.recipeLines.map((line) => (
             <p className="flow-node__recipe-line" key={line}>
               {line}
