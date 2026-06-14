@@ -53,7 +53,7 @@ export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
                 className="flow-node__handle"
                 id={port.id}
                 position={Position.Left}
-                style={{ top: 56 + index * 28 }}
+                style={{ top: "50%", transform: "translateY(-50%)" }}
                 type="target"
               />
               <span>{port.label}</span>
@@ -68,7 +68,7 @@ export function ProcessNodeCard({ data }: NodeProps<ProcessFlowNode>) {
                 className="flow-node__handle"
                 id={port.id}
                 position={Position.Right}
-                style={{ top: 56 + index * 28 }}
+                style={{ top: "50%", transform: "translateY(-50%)" }}
                 type="source"
               />
             </div>

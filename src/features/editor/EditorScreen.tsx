@@ -20,7 +20,6 @@ export function EditorScreen() {
   const latestRequestIdRef = useRef<string | null>(null);
   const calculationClient = useMemo(() => new CalculationClient(), []);
   const project = useEditorStore((state) => state.project);
-  const selectedEdgeId = useEditorStore((state) => state.selection.edgeIds[0] ?? null);
   const selectedNodeId = useEditorStore((state) => state.selection.nodeIds[0] ?? null);
   const selection = useEditorStore((state) => state.selection);
   const editorStore = useEditorStore();
@@ -152,7 +151,6 @@ export function EditorScreen() {
         <aside className="panel sidebar">
           <EditorSidebar
             calculation={calculation}
-            diagnostics={compiled.diagnostics}
             onAddProcessInput={(processId) => {
               editorStore.addProcessInput(processId);
             }}
@@ -297,21 +295,6 @@ export function EditorScreen() {
                 editorStore.updateTargetDetails(selectedNode.entityId, label, requiredFlowPerTick);
               }
             }}
-            onSelectedEdgeChange={(
-              edgeId,
-              sourceNodeId,
-              targetNodeId,
-              sourceHandleId,
-              targetHandleId
-            ) => {
-              editorStore.updateEdge(
-                edgeId,
-                sourceNodeId,
-                targetNodeId,
-                sourceHandleId,
-                targetHandleId
-              );
-            }}
             onTargetFlowChange={(targetId, requiredFlowPerTick) => {
               editorStore.updateTargetFlow(targetId, requiredFlowPerTick);
             }}
@@ -320,7 +303,6 @@ export function EditorScreen() {
             }}
             project={project}
             saveErrorMessage={saveErrorMessage}
-            selectedEdgeId={selectedEdgeId}
             selectedNodeId={selectedNodeId}
           />
         </aside>

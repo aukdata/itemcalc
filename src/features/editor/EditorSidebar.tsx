@@ -2,8 +2,6 @@ import { useMemo } from "react";
 import { TIER_INDEX } from "../../domain/production-line/types";
 import type {
   CalculationResult,
-  Diagnostic,
-  EditorEdge,
   ProjectDocumentV1,
   RecipeInput,
   RecipeOutput,
@@ -12,7 +10,6 @@ import type {
 
 interface EditorSidebarProps {
   calculation: CalculationResult | null;
-  diagnostics: Diagnostic[];
   onAddProcessInput: (processId: string) => void;
   onAddProcessOutput: (processId: string) => void;
   onRemoveProcessInput: (processId: string, inputId: string) => void;
@@ -31,18 +28,10 @@ interface EditorSidebarProps {
   onSelectedProcessInputChange: (inputId: string, input: RecipeInput) => void;
   onSelectedProcessOutputChange: (outputId: string, output: RecipeOutput) => void;
   onSelectedTargetDetailsChange: (label: string, requiredFlowPerTick: number) => void;
-  onSelectedEdgeChange: (
-    edgeId: string,
-    sourceNodeId: string | null,
-    targetNodeId: string | null,
-    sourceHandleId?: string | null,
-    targetHandleId?: string | null
-  ) => void;
   onTargetFlowChange: (targetId: string, requiredFlowPerTick: number) => void;
   onTierChange: (processId: string, tier: VoltageTier) => void;
   project: ProjectDocumentV1;
   saveErrorMessage: string | null;
-  selectedEdgeId: string | null;
   selectedNodeId: string | null;
 }
 
@@ -148,177 +137,8 @@ function getNodeTitle(project: ProjectDocumentV1, nodeId: string) {
   );
 }
 
-function getSourceHandleOptions(project: ProjectDocumentV1, nodeId: string) {
-  const node = project.editor.nodes.find((candidate) => candidate.id === nodeId);
-  if (node === undefined) {
-    return [];
-  }
-
-  if (node.kind === "externalInput") {
-    return [{ label: "\u5916\u90e8\u51fa\u529b", value: "external-output" }];
-  }
-
-  if (node.kind === "process") {
-    const process = project.line.processes.find((candidate) => candidate.id === node.entityId);
-    return (
-      process?.outputs.map((output) => ({
-        label: `${output.material.name} \u51fa\u529b`,
-        value: `process-output:${output.id}`
-      })) ?? []
-    );
-  }
-
-  return [];
-}
-
-function getTargetHandleOptions(project: ProjectDocumentV1, nodeId: string) {
-  const node = project.editor.nodes.find((candidate) => candidate.id === nodeId);
-  if (node === undefined) {
-    return [];
-  }
-
-  if (node.kind === "process") {
-    const process = project.line.processes.find((candidate) => candidate.id === node.entityId);
-    return (
-      process?.inputs.map((input) => ({
-        label: `${input.material.name} \u5165\u529b`,
-        value: `process-input:${input.id}`
-      })) ?? []
-    );
-  }
-
-  if (node.kind === "targetOutput") {
-    return [{ label: "\u76ee\u6a19\u5165\u529b", value: "target-input" }];
-  }
-
-  if (node.kind === "disposal") {
-    return [{ label: "\u5ec3\u68c4\u5165\u529b", value: "disposal-input" }];
-  }
-
-  return [];
-}
-
-function EdgeEditor({
-  edge,
-  onSelectedEdgeChange,
-  project
-}: {
-  edge: EditorEdge;
-  onSelectedEdgeChange: EditorSidebarProps["onSelectedEdgeChange"];
-  project: ProjectDocumentV1;
-}) {
-  const sourceOptions = project.editor.nodes.filter(
-    (node) => node.kind === "externalInput" || node.kind === "process"
-  );
-  const targetOptions = project.editor.nodes.filter(
-    (node) => node.kind === "process" || node.kind === "targetOutput" || node.kind === "disposal"
-  );
-
-  const sourceHandleValue =
-    edge.source.endpointType === "processOutput"
-      ? `process-output:${edge.source.portId}`
-      : "external-output";
-  const targetHandleValue =
-    edge.target.endpointType === "processInput"
-      ? `process-input:${edge.target.portId}`
-      : edge.target.endpointType === "targetOutput"
-        ? "target-input"
-        : "disposal-input";
-
-  return (
-    <section className="sidebar-section">
-      <h2>{"\u9078\u629e\u4e2d\u306e\u63a5\u7d9a"}</h2>
-      <label className="field-label">
-        {"\u7d20\u6750"}
-        <input className="field-input" readOnly value={edge.material.name} />
-      </label>
-      <label className="field-label">
-        {"\u63a5\u7d9a\u5143\u30ce\u30fc\u30c9"}
-        <select
-          className="field-input"
-          onChange={(event) => {
-            const nodeId = event.target.value;
-            const nextHandle = getSourceHandleOptions(project, nodeId)[0]?.value ?? null;
-            onSelectedEdgeChange(edge.id, nodeId, edge.target.nodeId, nextHandle, targetHandleValue);
-          }}
-          value={edge.source.nodeId}
-        >
-          {sourceOptions.map((node) => (
-            <option key={node.id} value={node.id}>
-              {getNodeTitle(project, node.id)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        {"\u63a5\u7d9a\u5143\u30dd\u30fc\u30c8"}
-        <select
-          className="field-input"
-          onChange={(event) => {
-            onSelectedEdgeChange(
-              edge.id,
-              edge.source.nodeId,
-              edge.target.nodeId,
-              event.target.value,
-              targetHandleValue
-            );
-          }}
-          value={sourceHandleValue}
-        >
-          {getSourceHandleOptions(project, edge.source.nodeId).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        {"\u63a5\u7d9a\u5148\u30ce\u30fc\u30c9"}
-        <select
-          className="field-input"
-          onChange={(event) => {
-            const nodeId = event.target.value;
-            const nextHandle = getTargetHandleOptions(project, nodeId)[0]?.value ?? null;
-            onSelectedEdgeChange(edge.id, edge.source.nodeId, nodeId, sourceHandleValue, nextHandle);
-          }}
-          value={edge.target.nodeId}
-        >
-          {targetOptions.map((node) => (
-            <option key={node.id} value={node.id}>
-              {getNodeTitle(project, node.id)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        {"\u63a5\u7d9a\u5148\u30dd\u30fc\u30c8"}
-        <select
-          className="field-input"
-          onChange={(event) => {
-            onSelectedEdgeChange(
-              edge.id,
-              edge.source.nodeId,
-              edge.target.nodeId,
-              sourceHandleValue,
-              event.target.value
-            );
-          }}
-          value={targetHandleValue}
-        >
-          {getTargetHandleOptions(project, edge.target.nodeId).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-    </section>
-  );
-}
-
 export function EditorSidebar({
   calculation,
-  diagnostics,
   onAddProcessInput,
   onAddProcessOutput,
   onRemoveProcessInput,
@@ -334,21 +154,15 @@ export function EditorSidebar({
   onSelectedProcessInputChange,
   onSelectedProcessOutputChange,
   onSelectedTargetDetailsChange,
-  onSelectedEdgeChange,
   onTargetFlowChange,
   onTierChange,
   project,
   saveErrorMessage,
-  selectedEdgeId,
   selectedNodeId
 }: EditorSidebarProps) {
   const selectedNode = useMemo(
     () => project.editor.nodes.find((candidate) => candidate.id === selectedNodeId) ?? null,
     [project.editor.nodes, selectedNodeId]
-  );
-  const selectedEdge = useMemo(
-    () => project.editor.edges.find((candidate) => candidate.id === selectedEdgeId) ?? null,
-    [project.editor.edges, selectedEdgeId]
   );
 
   const saveError =
@@ -469,9 +283,7 @@ export function EditorSidebar({
               />
             </label>
             {processCalculation === null ? null : (
-              <p className="sidebar-metric">
-                {`\u5fc5\u8981\u53f0\u6570: ${processCalculation.placedMachineCount}\u53f0`}
-              </p>
+              <p className="sidebar-metric">{`\u88c5\u7f6e: ${processCalculation.placedMachineCount}\u53f0`}</p>
             )}
           </section>
           <section className="sidebar-section recipe-section">
@@ -794,32 +606,12 @@ export function EditorSidebar({
     }
   }
 
-  if (selectedEdge !== null) {
-    return (
-      <>
-        {saveError}
-        <EdgeEditor edge={selectedEdge} onSelectedEdgeChange={onSelectedEdgeChange} project={project} />
-      </>
-    );
-  }
-
   return (
     <>
       {saveError}
       <section className="sidebar-section">
         <h2>{"\u9078\u629e\u4e2d\u306e\u9805\u76ee"}</h2>
-        <p className="sidebar-metric">
-          {"\u30ce\u30fc\u30c9\u307e\u305f\u306f\u63a5\u7d9a\u3092\u9078\u629e\u3059\u308b\u3068\u3001\u3053\u3053\u306b\u7de8\u96c6\u9805\u76ee\u3092\u8868\u793a\u3057\u307e\u3059\u3002"}
-        </p>
-        {calculation?.diagnostics.length ? (
-          <p className="sidebar-metric">
-            {`\u8a08\u7b97\u8a3a\u65ad: ${calculation.diagnostics.length} \u4ef6`}
-          </p>
-        ) : diagnostics.length ? (
-          <p className="sidebar-metric">
-            {`\u8a2d\u8a08\u8a3a\u65ad: ${diagnostics.length} \u4ef6`}
-          </p>
-        ) : null}
+        <p className="sidebar-metric">{"\u30ce\u30fc\u30c9\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044\u3002"}</p>
       </section>
     </>
   );

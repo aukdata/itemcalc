@@ -76,8 +76,8 @@ function buildProcessNodeData(process: ProcessNode, calculation: CalculationResu
     meta: "",
     metaLines: [
       processCalculation === undefined
-        ? "\u5fc5\u8981\u53f0\u6570 \u672a\u8a08\u7b97"
-        : `\u5fc5\u8981\u53f0\u6570 ${processCalculation.placedMachineCount}\u53f0`,
+        ? "\u88c5\u7f6e \u672a\u8a08\u7b97"
+        : `\u88c5\u7f6e ${processCalculation.placedMachineCount}\u53f0`,
       `\u6700\u4f4eTier ${process.minimumTier}`,
       `\u7a3c\u50cdTier ${process.operatingTier}`,
       `*\u6d88\u8cbbEU/t ${(
